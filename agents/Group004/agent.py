@@ -4,7 +4,11 @@ from src.AgentBase import AgentBase
 from src.Board import Board
 from src.Colour import Colour
 from src.Move import Move
+import torch
 
+from game_state import Hex
+from trainer import Trainer
+from mcts import mcts_search
 
 class NaiveAgent(AgentBase):
     """This class describes the default Hex agent. It will randomly send a
@@ -24,7 +28,7 @@ class NaiveAgent(AgentBase):
         If the agent is to make the first move, opp_move will be None.
         If the opponent has made a move, opp_move will contain the opponent's move.
         If the opponent has made a swap move, opp_move will contain a Move object with x=-1 and y=-1,
-        the game engine will also change your colour to the opponent colour.
+        the game engine will alwhat so change your colour to the opponent colour.
 
         Args:
             turn (int): The current turn
@@ -38,12 +42,22 @@ class NaiveAgent(AgentBase):
         if turn == 2 and choice([0, 1]) == 1:
             return Move(-1, -1)
 
-        # choose only from empty tiles, so the move is always legal
-        empty = [
-            (tile.x, tile.y)
-            for row in board.tiles
-            for tile in row
-            if tile.colour is None
-        ]
-        x, y = choice(empty)
-        return Move(x, y)
+        game = self.convert_board(board)
+
+        move, root = mcts_search(game, iters=1000)
+
+        return Move(*move)
+    
+    # this is up for discussion, might not be needed if we change how mcts does the game implementation 
+    def convert_board(self, board):
+        game = Hex()
+
+        for row in board.tiles:
+            for tile in row:
+                if tile.colour is not None:
+                    game.current_player = tile.colour.value + 1
+                    game.make_move((tile.x, tile.y))
+
+        game.current_player = self.colour.value + 1
+
+        return game
