@@ -1,4 +1,4 @@
-from union_find import UnionFind
+from agents.Group004.union_find import UnionFind
 class Hex:
     SIZE=11
     def __init__(self):
