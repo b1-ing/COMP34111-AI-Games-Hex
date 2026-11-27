@@ -12,7 +12,7 @@ THIS REALLY SHOULD BE IN C++
 import math
 import random
 
-from game_state import Hex
+from agents.Group004.game_state import Hex
 
 
 def legal_moves(state):

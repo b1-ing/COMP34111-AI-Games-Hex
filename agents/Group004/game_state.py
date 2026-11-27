@@ -133,7 +133,7 @@ class Hex:
 
     def clone(self):
         """Return an independent copy of this game state."""
-        copy = Hex()
+        copy = Hex(self.SIZE)
         copy.board = [row[:] for row in self.board]
         copy.current_player = self.current_player
         copy.winner = self.winner
