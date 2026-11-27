@@ -20,7 +20,7 @@ def legal_moves(state):
     if state.winner is not None:
         return []
     return [(r, c) for r in range(state.SIZE) for c in range(state.SIZE)
-            if state.board[r][c] == 0]
+            if state.board[r][c] is None]
 
 
 class Node:
