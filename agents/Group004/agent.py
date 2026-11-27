@@ -6,9 +6,9 @@ from src.Colour import Colour
 from src.Move import Move
 import torch
 
-from game_state import Hex
-from trainer import Trainer
-from mcts import mcts_search
+from agents.Group004.game_state import Hex
+from agents.Group004.mcts import mcts_search
+
 
 class NaiveAgent(AgentBase):
     """This class describes the default Hex agent. It will randomly send a

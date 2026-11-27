@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 IN_CHANNELS = 3
+N = 11  # default board size
 
 class ResBlock(nn.Module):
     """
