@@ -1,12 +1,26 @@
-
 # missing mcts import waitng on code
 
 
-#what im doing is passing game state into neural network -> having the pre trained neural network find the most promising moves and stuff using policy and stuff -> passing that to mcts -> mcts returns selected move to me which i apply to hex and update game
+# what im doing is passing game state into neural network -> having the pre trained neural network find the most promising moves and stuff using policy and stuff -> passing that to mcts -> mcts returns selected move to me which i apply to hex and update game
 
 import torch
 
 from src.Colour import Colour
+
+def colour_id(c):
+    """None / Colour / int -> 0, 1 (RED) or 2 (BLUE). Ints pass through unchanged."""
+    if c is None:
+        return EMPTY
+    if isinstance(c, Colour):
+        return c.value + 1          # Colour.RED = 0, Colour.BLUE = 1
+    return int(c)
+
+def board_array(board):
+    """game.board (rows of None / Colour) -> (n, n) int8 array of 0 / 1 / 2."""
+    if isinstance(board, np.ndarray):
+        return board.astype(np.int8, copy=False)
+    return np.array([[colour_id(cell) for cell in row] for row in board], dtype=np.int8)
+
 
 # Convert board into tensor for neural network
 def encode_board(game):
@@ -43,8 +57,9 @@ def get_legal_mask(game):
 
     return mask.flatten()
 
+
 # Get policy and value from neural network
-def predict_batch(games,nnet):
+def predict_batch(games, nnet):
     """
     For TALIN!!!
 
@@ -88,18 +103,19 @@ def predict_batch(games,nnet):
 
     If a game state already has a winner, MCTS should not send
     it to the inference engine. Instead, it should propagate
-    the actual game result rather than a predicted value. 
+    the actual game result rather than a predicted value.
     """
     boards = []
     masks = []
 
     for game in games:
-        boards.append(encode_board(game))
+        board = board_array(game.board)
+        boards.append(torch.from_numpy(encode(board, game.current_player)))
         masks.append(get_legal_mask(game))
 
     x = torch.stack(boards)
     mask = torch.stack(masks)
-    
+
     nnet.eval()
 
     device = next(nnet.parameters()).device
@@ -113,11 +129,11 @@ def predict_batch(games,nnet):
         policies = torch.softmax(logits, dim=1)
 
     # Convert policies back to original board coordinates
-    policies = policies.cpu()
-    values = values.cpu()
+    policies = policies.cpu().numpy()
+    values = values.cpu().numpy()
 
     for i, game in enumerate(games):
         if game.current_player == Colour.BLUE:
-            policies[i] = policies[i].reshape(11, 11).T.reshape(121)
+            policies[i] = policies[i].reshape(n, n).T.reshape(n * n)
 
-    return policies, values
+    return policies.astype(np.float32), values.astype(np.float32)
