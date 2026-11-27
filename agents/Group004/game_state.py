@@ -1,9 +1,9 @@
 from agents.Group004.union_find import UnionFind
 from src.Colour import Colour
 class Hex:
-    SIZE=11
-    def __init__(self):
-        self.board=[[None for _ in range(Hex.SIZE)] for _ in range(Hex.SIZE)]
+    def __init__(self, size = 11):
+        self.SIZE=size
+        self.board=[[None for _ in range(self.SIZE)] for _ in range(self.SIZE)]
         self.current_player=Colour.RED
         self.winner=None
         self.number_of_moves=0
@@ -14,7 +14,7 @@ class Hex:
 
     def check_valid_cell(self,cell):
         # returns if a cell is in board.
-        if (0<=cell[0]<Hex.SIZE) and (0<=cell[1]<Hex.SIZE):
+        if (0<=cell[0]<self.SIZE) and (0<=cell[1]<self.SIZE):
             return True
         return False
 
@@ -34,7 +34,7 @@ class Hex:
         res=[]
         for dr,dc in offsets:
             new_r,new_c=cell[0]+dr,cell[1]+dc
-            if (0<=new_r<Hex.SIZE) and (0<=new_c<Hex.SIZE):
+            if (0<=new_r<self.SIZE) and (0<=new_c<self.SIZE):
                 res.append((new_r,new_c))
 
         return res
@@ -69,31 +69,31 @@ class Hex:
         
         self.board[cell[0]][cell[1]]=self.current_player
         row,col=cell
-        cell_id=row*Hex.SIZE+col
+        cell_id=row*self.SIZE+col
         if self.current_player==Colour.RED:
             # red makes a move
             # p1 connects top to bottom
         
             if row==0:
                 self.p1_groups.join(UnionFind.EDGE1,cell_id)
-            if row==Hex.SIZE-1:
+            if row==self.SIZE-1:
                 self.p1_groups.join(UnionFind.EDGE2,cell_id)
 
             # join sets with friendly neighbors
             for nrow,ncol in self.get_neighbors(cell):
-                neighbor_id=nrow*Hex.SIZE+ncol
+                neighbor_id=nrow*self.SIZE+ncol
                 if self.board[nrow][ncol]==self.current_player:
                     self.p1_groups.join(neighbor_id,cell_id)
         elif self.current_player==Colour.BLUE:
         
             if col==0:
                 self.p2_groups.join(UnionFind.EDGE1,cell_id)
-            if col==Hex.SIZE-1:
+            if col==self.SIZE-1:
                 self.p2_groups.join(UnionFind.EDGE2,cell_id)
 
             # join sets with friendly neighbors
             for nrow,ncol in self.get_neighbors(cell):
-                neighbor_id=nrow*Hex.SIZE+ncol
+                neighbor_id=nrow*self.SIZE+ncol
                 if self.board[nrow][ncol]==self.current_player:
                     self.p2_groups.join(neighbor_id,cell_id)
 
