@@ -6,36 +6,45 @@
 
 import torch
 
-from trainer import Trainer
-# import trainer
-from mcts import mcts_search
-
-trainer = Trainer()
+from src.Colour import Colour
 
 # Convert board into tensor for neural network
 def encode_board(game):
-    board = torch.tensor(game.board)
+    board = torch.tensor([
+        [0 if cell is None else cell.value + 1 for cell in row]
+        for row in game.board
+    ])
 
-    player = game.current_player
+    player = game.current_player.value + 1
     opponent = 3 - player
 
+    if game.current_player == Colour.BLUE:
+        board = board.T
 
     player_board = (board == player).float()
     opponent_board = (board == opponent).float()
-    turn_board = torch.full((11, 11), float(player))
+    swap_board = torch.full(
+        (11, 11), float(game.swap_available)
+    )
 
-    return torch.stack([player_board, opponent_board, turn_board])
+    return torch.stack([player_board, opponent_board, swap_board])
 
 
 # Create mask for legal moves
 
 def get_legal_mask(game):
-    board = torch.tensor(game.board)
-    return (board == 0).flatten()
+    mask = torch.tensor([
+        [cell is None for cell in row]
+        for row in game.board
+    ])
 
+    if game.current_player == Colour.BLUE:
+        mask = mask.T
+
+    return mask.flatten()
 
 # Get policy and value from neural network
-def predict_batch(games):
+def predict_batch(games,nnet):
     """
     For TALIN!!!
 
@@ -90,7 +99,25 @@ def predict_batch(games):
 
     x = torch.stack(boards)
     mask = torch.stack(masks)
+    
+    nnet.eval()
 
-    policies, values = trainer.predict(x, mask)
+    device = next(nnet.parameters()).device
+    x = x.to(device)
+    mask = mask.to(device)
+
+    with torch.no_grad():
+        logits, values = nnet(x)
+
+        logits = logits.masked_fill(~mask.bool(), float("-inf"))
+        policies = torch.softmax(logits, dim=1)
+
+    # Convert policies back to original board coordinates
+    policies = policies.cpu()
+    values = values.cpu()
+
+    for i, game in enumerate(games):
+        if game.current_player == Colour.BLUE:
+            policies[i] = policies[i].reshape(11, 11).T.reshape(121)
 
     return policies, values
