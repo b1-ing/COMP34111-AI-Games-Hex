@@ -1,21 +1,19 @@
 from agents.Group004.union_find import UnionFind
+from src.Colour import Colour
 class Hex:
     SIZE=11
     def __init__(self):
-        self.board=[[0 for _ in range(Hex.SIZE)] for _ in range(Hex.SIZE)]
-        self.current_player=1
+        self.board=[[None for _ in range(Hex.SIZE)] for _ in range(Hex.SIZE)]
+        self.current_player=Colour.RED
         self.winner=None
         self.number_of_moves=0
         self.swap_available=False
 
         self.p1_groups=UnionFind()
         self.p2_groups=UnionFind()
-        self.player_sides={
-            1:1,
-            2:2
-        }
 
     def check_valid_cell(self,cell):
+        # returns if a cell is in board.
         if (0<=cell[0]<Hex.SIZE) and (0<=cell[1]<Hex.SIZE):
             return True
         return False
@@ -54,7 +52,7 @@ class Hex:
         if not self.check_valid_cell(cell):
             return False
 
-        return self.board[cell[0]][cell[1]]==0
+        return self.board[cell[0]][cell[1]] is None
 
     def make_move(self,cell):
         """Makes a move if possible
@@ -68,12 +66,12 @@ class Hex:
             return False
 
         self.number_of_moves+=1
-        side=self.player_sides[self.current_player]
         
-        self.board[cell[0]][cell[1]]=side
+        self.board[cell[0]][cell[1]]=self.current_player
         row,col=cell
         cell_id=row*Hex.SIZE+col
-        if side==1:
+        if self.current_player==Colour.RED:
+            # red makes a move
             # p1 connects top to bottom
         
             if row==0:
@@ -84,9 +82,9 @@ class Hex:
             # join sets with friendly neighbors
             for nrow,ncol in self.get_neighbors(cell):
                 neighbor_id=nrow*Hex.SIZE+ncol
-                if self.board[nrow][ncol]==1:
+                if self.board[nrow][ncol]==self.current_player:
                     self.p1_groups.join(neighbor_id,cell_id)
-        elif side==2:
+        elif self.current_player==Colour.BLUE:
         
             if col==0:
                 self.p2_groups.join(UnionFind.EDGE1,cell_id)
@@ -96,20 +94,19 @@ class Hex:
             # join sets with friendly neighbors
             for nrow,ncol in self.get_neighbors(cell):
                 neighbor_id=nrow*Hex.SIZE+ncol
-                if self.board[nrow][ncol]==2:
+                if self.board[nrow][ncol]==self.current_player:
                     self.p2_groups.join(neighbor_id,cell_id)
 
         if self.detect_winner(self.current_player):
             self.winner=self.current_player
         else:
-            # 3-1=2 and 3-2=1 lol
-            self.current_player=3-self.current_player
+            self.current_player=Colour.opposite(self.current_player)
         
         self.swap_available=self.number_of_moves==1 and self.winner is None
         
         return True
 
-    def detect_winner(self,player):
+    def detect_winner(self,color):
         """Check whether the specified player has a winning path.
 
             Side 1 connects top to bottom.
@@ -127,11 +124,11 @@ class Hex:
         # side 1 goes top to bottom
         # side 2 goes left to right
 
-        if player not in (1,2):
-            raise ValueError("Player must be 1 or 2")
+        if color not in (Colour.RED,Colour.BLUE):
+            raise ValueError("Player must be red or blue")
 
-        side=self.player_sides[player]
-        if side==1:
+        
+        if color==Colour.RED:
             return self.p1_groups.is_connected(UnionFind.EDGE1,UnionFind.EDGE2)
         return self.p2_groups.is_connected(UnionFind.EDGE1,UnionFind.EDGE2)
 
@@ -151,7 +148,6 @@ class Hex:
         # copy swapping state
         copy.number_of_moves=self.number_of_moves
         copy.swap_available=self.swap_available
-        copy.player_sides=self.player_sides.copy()
         return copy
 
     def swap(self):
@@ -166,13 +162,11 @@ class Hex:
         Raises:
             ValueError: If swapping is unavailable or it is not Player 2's turn.
         """
-        if not self.swap_available or self.current_player!=2:
+        if not self.swap_available or self.current_player!=Colour.BLUE or self.winner is not None:
             raise ValueError("Not the first move")
         
         # if player 2 invokes swap, player 1 gets next move.
         self.swap_available=False
-        self.current_player=1
 
-        # change the map
-        self.player_sides[1]=2
-        self.player_sides[2]=1
+        # if player 2(BLUE) invokes swap, the RED tile placed by player 1 becomes a piece owned by player 2. Next tile to be placed is Blue, which is owned by player 1 now.....
+        
